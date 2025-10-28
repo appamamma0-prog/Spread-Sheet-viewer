@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>Google 시트 뷰어 (1분 자동 새로고침)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      #frame {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #111;
+      }
+      #status {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font: 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
+        color: #ddd;
+        background: rgba(0,0,0,.45);
+        user-select: none;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      id="frame"
+      src="https://docs.google.com/spreadsheets/d/1ELGd0SQnMaR3M5L1tcmrA3iQi37eiWuxXEs4l7qnS-0/preview"
+      allowfullscreen
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade">
+    </iframe>
+    <div id="status">초기 로딩 중…</div>
+
+    <script>
+      (function() {
+        const frame = document.getElementById('frame');
+        const statusEl = document.getElementById('status');
+        const BASE = "https://docs.google.com/spreadsheets/d/1ELGd0SQnMaR3M5L1tcmrA3iQi37eiWuxXEs4l7qnS-0/preview";
+        const INTERVAL = 60 * 1000; // 60초
+        const FIRST_DELAY = 5000;   // 초기 로딩 방해하지 않도록 5초 후부터 시작
+        let timer = null;
+
+        function setStatus(msg) {
+          statusEl.textContent = msg;
+        }
+
+        function refresh() {
+          // cache-busting 쿼리 파라미터 추가
+          const url = BASE + (BASE.includes("?") ? "&" : "?") + "t=" + Date.now();
+          frame.src = url;
+          setStatus("새로고침: " + new Date().toLocaleTimeString());
+        }
+
+        // 탭이 비활성화되었을 때 과도한 새로고침 방지
+        document.addEventListener("visibilitychange", function() {
+          if (document.hidden) {
+            if (timer) { clearInterval(timer); timer = null; setStatus("일시정지(탭 비활성화)"); }
+          } else {
+            // 복귀 시 즉시 한 번 새로고침 후 타이머 재시작
+            refresh();
+            if (!timer) { timer = setInterval(refresh, INTERVAL); }
+          }
+        });
+
+        // 초기 onload 표기
+        frame.addEventListener('load', function() { setStatus("표시 중 — " + new Date().toLocaleTimeString()); });
+
+        // 일정 시간 후 주기 시작
+        setTimeout(function() {
+          // 첫 새로고침(초기 로딩 완료 후 보정)
+          refresh();
+          timer = setInterval(refresh, INTERVAL);
+        }, FIRST_DELAY);
+      })();
+    </script>
+  </body>
+</html>
